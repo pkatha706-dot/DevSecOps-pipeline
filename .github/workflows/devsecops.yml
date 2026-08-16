@@ -1,0 +1,231 @@
+name: DevSecOps Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # Stage 1: Secret scanning across full git history
+  secret-scan:
+    name: TruffleHog Secret Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run TruffleHog
+        uses: trufflesecurity/trufflehog@v3
+        with:
+          path: ./
+          base: ${{ github.event.repository.default_branch }}
+          head: HEAD
+          extra_args: --debug --only-verified
+
+  # Stage 2: SAST with Bandit
+  sast:
+    name: Bandit SAST
+    runs-on: ubuntu-latest
+    needs: secret-scan
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Bandit
+        run: pip install bandit
+
+      - name: Run Bandit
+        run: |
+          bandit -r app/ \
+            --severity-level medium \
+            --format json \
+            --output bandit-report.json || true
+
+      - name: Upload Bandit report
+        uses: actions/upload-artifact@v4
+        with:
+          name: bandit-report
+          path: bandit-report.json
+
+  # Stage 3: SCA with Snyk
+  sca:
+    name: Snyk SCA
+    runs-on: ubuntu-latest
+    needs: sast
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run Snyk
+        uses: snyk/actions/python@master
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: >
+            --severity-threshold=high
+            --json-file-output=snyk-report.json
+            app/
+
+      - name: Upload Snyk report
+        uses: actions/upload-artifact@v4
+        with:
+          name: snyk-report
+          path: snyk-report.json
+
+  # Stage 4: IaC scan with Checkov
+  iac-scan:
+    name: Checkov IaC Scan
+    runs-on: ubuntu-latest
+    needs: sca
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run Checkov
+        uses: bridgecrewio/checkov-action@master
+        with:
+          directory: .
+          file: Dockerfile
+          soft_fail: false
+          output_format: json
+          output_file_path: checkov-report.json
+
+      - name: Upload Checkov report
+        uses: actions/upload-artifact@v4
+        with:
+          name: checkov-report
+          path: checkov-report.json
+
+  # Stage 5: Docker build and save image artifact
+  docker-build:
+    name: Docker Build
+    runs-on: ubuntu-latest
+    needs: iac-scan
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t devsecops-app:${{ github.sha }} .
+
+      - name: Save Docker image
+        run: docker save devsecops-app:${{ github.sha }} | gzip > devsecops-image.tar.gz
+
+      - name: Upload Docker image artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-image
+          path: devsecops-image.tar.gz
+
+  # Stage 6: Container scan with Trivy
+  container-scan:
+    name: Trivy Container Scan
+    runs-on: ubuntu-latest
+    needs: docker-build
+    steps:
+      - name: Download Docker image artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: docker-image
+
+      - name: Load Docker image
+        run: docker load < devsecops-image.tar.gz
+
+      - name: Run Trivy
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: devsecops-app:${{ github.sha }}
+          format: json
+          output: trivy-report.json
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+
+      - name: Upload Trivy report
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-report
+          path: trivy-report.json
+
+  # Stage 7: Deploy Flask app locally for DAST
+  dast-deploy:
+    name: Deploy for DAST
+    runs-on: ubuntu-latest
+    needs: container-scan
+    outputs:
+      app_ready: ${{ steps.healthcheck.outputs.ready }}
+    steps:
+      - name: Download Docker image artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: docker-image
+
+      - name: Load Docker image
+        run: docker load < devsecops-image.tar.gz
+
+      - name: Start application container
+        run: docker run -d --name devsecops-app -p 5000:5000 devsecops-app:${{ github.sha }}
+
+      - name: Wait for health check
+        id: healthcheck
+        run: |
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:5000/health; then
+              echo "ready=true" >> $GITHUB_OUTPUT
+              exit 0
+            fi
+            echo "Attempt $i: app not ready yet, waiting 2s..."
+            sleep 2
+          done
+          echo "App failed to start after 60 seconds"
+          docker logs devsecops-app
+          exit 1
+
+  # Stage 8: DAST with OWASP ZAP
+  dast:
+    name: OWASP ZAP Baseline Scan
+    runs-on: ubuntu-latest
+    needs: dast-deploy
+    steps:
+      - name: Download Docker image artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: docker-image
+
+      - name: Load Docker image
+        run: docker load < devsecops-image.tar.gz
+
+      - name: Start application container
+        run: docker run -d --name devsecops-app -p 5000:5000 devsecops-app:${{ github.sha }}
+
+      - name: Wait for application to be ready
+        run: |
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:5000/health; then
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "App failed to start" && exit 1
+
+      - name: Run OWASP ZAP Baseline Scan
+        uses: zaproxy/action-baseline@v0.12.0
+        with:
+          target: http://localhost:5000
+          fail_action: true
+          artifact_name: zap-report
+
+      - name: Upload ZAP report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: zap-report
+          path: report_json.json
