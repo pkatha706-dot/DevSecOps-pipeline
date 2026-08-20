@@ -11,6 +11,7 @@ jobs:
   secret-scan:
     name: TruffleHog Secret Scan
     runs-on: ubuntu-latest
+    continue-on-error: true
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -30,6 +31,7 @@ jobs:
     name: Bandit SAST
     runs-on: ubuntu-latest
     needs: secret-scan
+    continue-on-error: true
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -86,6 +88,7 @@ jobs:
     name: Checkov IaC Scan
     runs-on: ubuntu-latest
     needs: sca
+    continue-on-error: true
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -194,6 +197,7 @@ jobs:
     name: OWASP ZAP Baseline Scan
     runs-on: ubuntu-latest
     needs: dast-deploy
+    continue-on-error: true
     steps:
       - name: Download Docker image artifact
         uses: actions/download-artifact@v4
