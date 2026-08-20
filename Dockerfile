@@ -14,7 +14,8 @@ WORKDIR /app
 COPY --from=builder /install /usr/local
 COPY app/ .
 
-RUN useradd --no-create-home --shell /bin/false appuser
+RUN useradd --no-create-home --shell /bin/false appuser \
+    && chown -R appuser:appuser /app
 USER appuser
 
 EXPOSE 5000
