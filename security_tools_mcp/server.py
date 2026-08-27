@@ -86,7 +86,7 @@ Explain this vulnerability in plain English covering:
 Keep the explanation under 300 words. Use developer-friendly language, not academic security jargon."""
 
     response = client.models.generate_content(
-        model="gemini-2.5-flash",
+        model="gemini-3.6-flash",
         contents=prompt,
         config=types.GenerateContentConfig(max_output_tokens=500),
     )

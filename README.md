@@ -39,7 +39,7 @@ Demonstrates automated security scanning, AI-assisted triage, and MCP-based secu
 ┌──────────────────────────────────────────────────────────────────────┐
 │              AI Triage Agent (ai_triage/ai_triage.py)                │
 │                                                                      │
-│  load_reports() → build_triage_prompt() → Gemini 2.5 Flash          │
+│  load_reports() → build_triage_prompt() → Gemini 3.6 Flash          │
 │       → prioritized Markdown report → GitHub Issue (label: security) │
 └──────────────────────────────────────────────────────────────────────┘
                        │ parallel / ad-hoc
