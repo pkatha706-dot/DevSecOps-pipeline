@@ -88,7 +88,10 @@ Keep the explanation under 300 words. Use developer-friendly language, not acade
     response = client.models.generate_content(
         model="gemini-3.6-flash",
         contents=prompt,
-        config=types.GenerateContentConfig(max_output_tokens=500),
+        config=types.GenerateContentConfig(
+            max_output_tokens=800,
+            thinking_config=types.ThinkingConfig(thinking_budget=0),
+        ),
     )
     return response.text
 

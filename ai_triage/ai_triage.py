@@ -180,7 +180,10 @@ def main():
         client,
         model="gemini-3.6-flash",
         contents=prompt,
-        config=types.GenerateContentConfig(max_output_tokens=2000),
+        config=types.GenerateContentConfig(
+            max_output_tokens=4096,
+            thinking_config=types.ThinkingConfig(thinking_budget=0),
+        ),
     )
 
     triage_markdown = response.text
