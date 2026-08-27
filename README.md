@@ -13,6 +13,17 @@ Demonstrates automated security scanning, AI-assisted triage, and MCP-based secu
 - **Supply-chain security**: SPDX SBOM generation signed with Cosign.
 - **12 real, documented debugging incidents** — permission bugs, IaC policy failures, CI token-scope errors, a dead code path, an invalid model ID, a mid-flight upstream merge conflict, a vendor billing wall, a model deprecation, transient API failures, and a silent output-truncation bug caused by an undocumented model feature. Every one was reproduced, root-caused, fixed, and verified — not guessed at. [Full engineering log →](docs/incidents.md)
 
+**Static evidence, no repo access required:** [a sample generated triage report](docs/samples/triage-report-example.md) and [a sample pipeline run with per-stage timing](docs/samples/pipeline-run-example.md).
+
+---
+
+## Key Finding (from a live run)
+
+> **HIGH — Flask debug mode enabled (Bandit B201)**
+> `app/app.py:58` — the app is run with `debug=True`, which exposes the Werkzeug interactive debugger and allows execution of arbitrary code. Ranked the top risk across all 22 findings in the [live triage report](https://github.com/pkatha706-dot/DevSecOps-pipeline/issues/3).
+>
+> **Remediation:** set `debug=False`, or drive it from an environment variable that defaults to `False` in any non-local environment.
+
 ---
 
 ## Architecture

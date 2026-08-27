@@ -9,6 +9,10 @@ first try would be a tutorial, not evidence of debugging ability. Every entry
 below is a real CI failure with a real root cause and a real, tested fix — not a
 hypothetical. Commit hashes are given so each fix can be inspected directly.
 
+See [samples/triage-report-example.md](samples/triage-report-example.md) and
+[samples/pipeline-run-example.md](samples/pipeline-run-example.md) for the
+actual output these fixes produced.
+
 | # | Incident | Category | Commit |
 |---|---|---|---|
 | 1 | [Container failed its health check](#inc-01--container-failed-its-health-check) | Container / permissions | [`0b84806`](https://github.com/pkatha706-dot/DevSecOps-pipeline/commit/0b84806) |
