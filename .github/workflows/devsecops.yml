@@ -240,5 +240,5 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: zap-report
-          path: report_json.json
+          name: zap-scan-results
+          path: zap-report.json
