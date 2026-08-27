@@ -29,7 +29,6 @@ Your repo currently has:
 | `.github/workflows/devsecops.yml` | The 8-stage pipeline |
 | `ai_triage/ai_triage.py` | Reads scanner JSON reports, calls Claude to prioritize findings, opens a GitHub Issue |
 | `security_tools_mcp/server.py` | Exposes the scanners as MCP tools so an AI coding assistant can call them directly |
-| `supply_chain/generate_sbom.sh` | Generates a signed Software Bill of Materials |
 
 Nothing has been pushed to GitHub yet — the repo exists locally with a remote configured (`github.com/pkatha706-dot/DevSecOps-pipeline`) but no commits.
 
@@ -84,7 +83,6 @@ GitHub Actions needs credentials to run some of these scanners. In your repo: **
 |---|---|
 | `SNYK_TOKEN` | Authenticates the Snyk SCA scan against Snyk's CVE database (free account at snyk.io) |
 | `ANTHROPIC_API_KEY` | Lets `ai_triage.py` call Claude to generate the prioritized findings report |
-| `COSIGN_KEY` | Private key used to cryptographically sign the SBOM (optional — the script skips signing gracefully if unset) |
 | `GITHUB_TOKEN` | Already provided automatically by Actions — no setup needed, used to open the triage issue |
 
 **Concept to learn:** why secrets live in GitHub's encrypted secret store instead of the repo itself. This is the correct pattern that Stage 1 (TruffleHog) exists to enforce — if you ever see yourself typing a real key into a file, that's the exact behavior this pipeline is designed to catch.
@@ -149,16 +147,6 @@ Point Claude Desktop at it via `claude_desktop_config.json`:
 
 **Concept to learn:** MCP (Model Context Protocol) is how AI assistants call external tools in a standardized way — the same pattern this very conversation is built on. Exposing security scanners as MCP tools means an AI assistant can answer "is this code safe?" by actually running Bandit, not by guessing from training data.
 
-### Step 9 — Generate and sign the SBOM (supply chain security)
-
-```bash
-bash supply_chain/generate_sbom.sh flask-vulnerable-app:latest
-```
-
-This runs Syft to produce a full inventory of every package inside your container image (an SBOM — Software Bill of Materials), then optionally signs it with Cosign so anyone downstream can verify the SBOM hasn't been tampered with.
-
-**Concept to learn:** *supply chain security*. Most real-world breaches now come through compromised dependencies or build pipelines (the SolarWinds attack is the canonical example), not through code you wrote yourself. An SBOM is how you answer "which of my 200 dependencies has the CVE that just got announced?" in minutes instead of days. Signing it with Cosign proves the SBOM itself came from your real build, not an attacker's tampered one.
-
 ---
 
 ## Part 4: Reading the Results Like a Security Engineer
@@ -186,7 +174,6 @@ This is the mental model the AI triage agent is automating — but understanding
 | CI/CD pipeline gating | `needs:` dependencies between jobs |
 | Vulnerability triage/prioritization | `ai_triage.py` |
 | MCP (Model Context Protocol) | `security_tools_mcp/server.py` |
-| Software supply chain security (SBOM + signing) | `generate_sbom.sh` |
 
 ---
 

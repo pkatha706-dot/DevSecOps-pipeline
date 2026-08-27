@@ -10,7 +10,6 @@ Demonstrates automated security scanning, AI-assisted triage, and MCP-based secu
 - **A working AI triage agent**, not a mockup. A live run cross-correlated 22 real findings across 4 scanners into one prioritized, structured GitHub Issue with severity tables, false-positive reasoning, and remediation steps. [See the actual generated report →](https://github.com/pkatha706-dot/DevSecOps-pipeline/issues/3)
 - **Multi-provider LLM integration**: built against Anthropic's API, then migrated to Google's Gemini API mid-project, the kind of vendor swap real production systems require, done without downtime to the rest of the pipeline.
 - **An MCP server** exposing the same scanners as callable tools for an LLM client, independent of the CI pipeline.
-- **Supply-chain security**: SPDX SBOM generation signed with Cosign.
 - **12 real, documented debugging incidents**: permission bugs, IaC policy failures, CI token-scope errors, a dead code path, an invalid model ID, a mid-flight upstream merge conflict, a vendor billing wall, a model deprecation, transient API failures, and a silent output-truncation bug caused by an undocumented model feature. Every one was reproduced, root-caused, fixed, and verified, not guessed at. [Full engineering log →](docs/incidents.md)
 
 **Static evidence, no repo access required:** [a sample generated triage report](docs/samples/triage-report-example.md) and [a sample pipeline run with per-stage timing](docs/samples/pipeline-run-example.md).
@@ -71,13 +70,6 @@ Demonstrates automated security scanning, AI-assisted triage, and MCP-based secu
 │                                                                      │
 │  run_bandit()  · run_snyk()  · run_trivy()  · explain_vulnerability()│
 └──────────────────────────────────────────────────────────────────────┘
-                       │ supply chain
-                       ▼
-┌──────────────────────────────────────────────────────────────────────┐
-│           SBOM Generation (supply_chain/generate_sbom.sh)            │
-│                                                                      │
-│  syft → sbom.json (SPDX)  →  cosign sign-blob → sbom.json.sig       │
-└──────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -94,8 +86,6 @@ Demonstrates automated security scanning, AI-assisted triage, and MCP-based secu
 | **OWASP ZAP** | Dynamic Application Security Testing: active baseline scan against the running app |
 | **Gemini (Google)** | AI triage agent that prioritizes findings across all scanners and drafts a GitHub Issue |
 | **MCP FastMCP** | Exposes security scanner tools as MCP-protocol endpoints for Claude or other LLM agents |
-| **Syft** | Generates a Software Bill of Materials (SBOM) in SPDX JSON format |
-| **Cosign** | Signs the SBOM blob to establish supply chain provenance |
 
 ---
 
@@ -105,7 +95,7 @@ Demonstrates automated security scanning, AI-assisted triage, and MCP-based secu
 
 ```bash
 pip install flask bandit google-genai mcp requests
-# install snyk CLI, trivy, syft, cosign via their respective install docs
+# install snyk CLI and trivy via their respective install docs
 ```
 
 ### Start the vulnerable app
@@ -144,13 +134,6 @@ export GEMINI_API_KEY=AIza...
 python security_tools_mcp/server.py
 ```
 
-### Generate and sign SBOM
-
-```bash
-export COSIGN_KEY="$(cat cosign.key)"
-bash supply_chain/generate_sbom.sh devsecops-app:latest
-```
-
 ---
 
 ## OWASP DevSecOps Maturity Model (DSOMM) Mapping
@@ -164,7 +147,6 @@ bash supply_chain/generate_sbom.sh devsecops-app:latest
 | **Container Security (Level 3)** | Trivy scans the built image for critical/high CVEs |
 | **Dynamic Analysis (Level 3)** | OWASP ZAP baseline scan against the live running container |
 | **Vulnerability Management (Level 3)** | AI triage agent (Gemini) cross-correlates all scanner outputs into a prioritized GitHub Issue |
-| **Supply Chain Security (Level 4)** | Syft generates SPDX SBOM; Cosign signs for provenance |
 
 ---
 
@@ -175,4 +157,3 @@ bash supply_chain/generate_sbom.sh devsecops-app:latest
 | `SNYK_TOKEN` | Authenticate Snyk SCA scans |
 | `GITHUB_TOKEN` | Post triage findings as GitHub Issues (auto-provided by Actions) |
 | `GEMINI_API_KEY` | Gemini API access for AI triage and MCP explain tool |
-| `COSIGN_KEY` | Private key for signing the SBOM |
