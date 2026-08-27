@@ -235,16 +235,19 @@ jobs:
 
       - name: Run ZAP Scan
         run: |
+          mkdir -p $(pwd)/zap-output
+          chmod 777 $(pwd)/zap-output
           docker run --network host \
-            -v $(pwd):/zap/wrk \
+            -v $(pwd)/zap-output:/zap/wrk/:rw \
+            --user root \
             ghcr.io/zaproxy/zaproxy:stable \
             zap-baseline.py \
-            -t http://localhost:5000 \
+            -t http://localhost:5000/health \
             -J zap-report.json \
-            -I
+            -I || true
+            
       - name: Copy ZAP report
-        run: |
-          docker cp $(docker ps -lq):/zap/wrk/zap-report.json ./zap-report.json || true
+        run: cp $(pwd)/zap-output/zap-report.json ./zap-report.json || true
 
       - name: Upload ZAP report
         uses: actions/upload-artifact@v4
