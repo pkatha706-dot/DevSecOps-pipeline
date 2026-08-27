@@ -75,6 +75,9 @@ jobs:
 
       - name: Install Snyk CLI
         run: npm install -g snyk
+
+      - name: Install dependencies
+        run: pip install -r app/requirements.txt
         
       - name: Run Snyk
         run: |
@@ -239,7 +242,9 @@ jobs:
             -t http://localhost:5000 \
             -J zap-report.json \
             -I
-
+      - name: Copy ZAP report
+        run: |
+          docker cp $(docker ps -lq):/zap/wrk/zap-report.json ./zap-report.json || true
 
       - name: Upload ZAP report
         uses: actions/upload-artifact@v4
