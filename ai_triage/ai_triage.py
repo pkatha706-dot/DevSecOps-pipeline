@@ -1,9 +1,10 @@
 import json
 import os
 import sys
+import time
 import requests
 from google import genai
-from google.genai import types
+from google.genai import errors, types
 
 REPORTS_DIR = os.environ.get("REPORTS_DIR", ".")
 GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN", "")
@@ -131,6 +132,18 @@ def _summarize_zap(report: dict) -> str:
     return "\n".join(lines)
 
 
+def generate_with_retry(client: genai.Client, max_attempts: int = 3, delay: int = 15, **kwargs):
+    for attempt in range(1, max_attempts + 1):
+        try:
+            return client.models.generate_content(**kwargs)
+        except errors.ServerError:
+            if attempt == max_attempts:
+                raise
+            print(f"Gemini overloaded (attempt {attempt}/{max_attempts}), retrying in {delay}s...")
+            time.sleep(delay)
+            delay *= 2
+
+
 def create_github_issue(markdown: str) -> dict:
     if not GITHUB_TOKEN or not GITHUB_REPO:
         print("GITHUB_TOKEN or GITHUB_REPO not set — skipping issue creation")
@@ -163,7 +176,8 @@ def main():
     prompt = build_triage_prompt(reports)
 
     client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
-    response = client.models.generate_content(
+    response = generate_with_retry(
+        client,
         model="gemini-3.6-flash",
         contents=prompt,
         config=types.GenerateContentConfig(max_output_tokens=2000),
