@@ -4,6 +4,17 @@ Demonstrates automated security scanning, AI-assisted triage, and MCP-based secu
 
 ---
 
+## What This Demonstrates
+
+- **A 9-stage CI/CD security pipeline** (GitHub Actions) covering secret scanning, SAST, SCA, IaC scanning, container build, container scanning, DAST, and AI-assisted triage — six distinct security tools wired into one pipeline: TruffleHog, Bandit, Snyk, Checkov, Trivy, and OWASP ZAP.
+- **A working AI triage agent**, not a mockup — a live run cross-correlated 22 real findings across 4 scanners into one prioritized, structured GitHub Issue with severity tables, false-positive reasoning, and remediation steps. [See the actual generated report →](https://github.com/pkatha706-dot/DevSecOps-pipeline/issues/3)
+- **Multi-provider LLM integration**: built against Anthropic's API, then migrated to Google's Gemini API mid-project — the kind of vendor swap real production systems require, done without downtime to the rest of the pipeline.
+- **An MCP server** exposing the same scanners as callable tools for an LLM client, independent of the CI pipeline.
+- **Supply-chain security**: SPDX SBOM generation signed with Cosign.
+- **12 real, documented debugging incidents** — permission bugs, IaC policy failures, CI token-scope errors, a dead code path, an invalid model ID, a mid-flight upstream merge conflict, a vendor billing wall, a model deprecation, transient API failures, and a silent output-truncation bug caused by an undocumented model feature. Every one was reproduced, root-caused, fixed, and verified — not guessed at. [Full engineering log →](docs/incidents.md)
+
+---
+
 ## Architecture
 
 ```
