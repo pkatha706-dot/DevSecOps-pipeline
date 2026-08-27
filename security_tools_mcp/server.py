@@ -85,7 +85,7 @@ Explain this vulnerability in plain English covering:
 Keep the explanation under 300 words. Use developer-friendly language, not academic security jargon."""
 
     message = client.messages.create(
-        model="claude-opus-4-8",
+        model="claude-opus-5",
         max_tokens=500,
         messages=[{"role": "user", "content": prompt}],
     )
