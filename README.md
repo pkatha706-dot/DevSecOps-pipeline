@@ -1,4 +1,4 @@
-# DevSecOps Pipeline — Portfolio Project
+# DevSecOps Pipeline: Portfolio Project
 
 Demonstrates automated security scanning, AI-assisted triage, and MCP-based security tooling for early-career Security Engineer roles.
 
@@ -6,12 +6,12 @@ Demonstrates automated security scanning, AI-assisted triage, and MCP-based secu
 
 ## What This Demonstrates
 
-- **A 9-stage CI/CD security pipeline** (GitHub Actions) covering secret scanning, SAST, SCA, IaC scanning, container build, container scanning, DAST, and AI-assisted triage — six distinct security tools wired into one pipeline: TruffleHog, Bandit, Snyk, Checkov, Trivy, and OWASP ZAP.
-- **A working AI triage agent**, not a mockup — a live run cross-correlated 22 real findings across 4 scanners into one prioritized, structured GitHub Issue with severity tables, false-positive reasoning, and remediation steps. [See the actual generated report →](https://github.com/pkatha706-dot/DevSecOps-pipeline/issues/3)
-- **Multi-provider LLM integration**: built against Anthropic's API, then migrated to Google's Gemini API mid-project — the kind of vendor swap real production systems require, done without downtime to the rest of the pipeline.
+- **A 9-stage CI/CD security pipeline** (GitHub Actions) covering secret scanning, SAST, SCA, IaC scanning, container build, container scanning, DAST, and AI-assisted triage. Six distinct security tools are wired into one pipeline: TruffleHog, Bandit, Snyk, Checkov, Trivy, and OWASP ZAP.
+- **A working AI triage agent**, not a mockup. A live run cross-correlated 22 real findings across 4 scanners into one prioritized, structured GitHub Issue with severity tables, false-positive reasoning, and remediation steps. [See the actual generated report →](https://github.com/pkatha706-dot/DevSecOps-pipeline/issues/3)
+- **Multi-provider LLM integration**: built against Anthropic's API, then migrated to Google's Gemini API mid-project, the kind of vendor swap real production systems require, done without downtime to the rest of the pipeline.
 - **An MCP server** exposing the same scanners as callable tools for an LLM client, independent of the CI pipeline.
 - **Supply-chain security**: SPDX SBOM generation signed with Cosign.
-- **12 real, documented debugging incidents** — permission bugs, IaC policy failures, CI token-scope errors, a dead code path, an invalid model ID, a mid-flight upstream merge conflict, a vendor billing wall, a model deprecation, transient API failures, and a silent output-truncation bug caused by an undocumented model feature. Every one was reproduced, root-caused, fixed, and verified — not guessed at. [Full engineering log →](docs/incidents.md)
+- **12 real, documented debugging incidents**: permission bugs, IaC policy failures, CI token-scope errors, a dead code path, an invalid model ID, a mid-flight upstream merge conflict, a vendor billing wall, a model deprecation, transient API failures, and a silent output-truncation bug caused by an undocumented model feature. Every one was reproduced, root-caused, fixed, and verified, not guessed at. [Full engineering log →](docs/incidents.md)
 
 **Static evidence, no repo access required:** [a sample generated triage report](docs/samples/triage-report-example.md) and [a sample pipeline run with per-stage timing](docs/samples/pipeline-run-example.md).
 
@@ -19,8 +19,8 @@ Demonstrates automated security scanning, AI-assisted triage, and MCP-based secu
 
 ## Key Finding (from a live run)
 
-> **HIGH — Flask debug mode enabled (Bandit B201)**
-> `app/app.py:58` — the app is run with `debug=True`, which exposes the Werkzeug interactive debugger and allows execution of arbitrary code. Ranked the top risk across all 22 findings in the [live triage report](https://github.com/pkatha706-dot/DevSecOps-pipeline/issues/3).
+> **HIGH: Flask debug mode enabled (Bandit B201)**
+> In `app/app.py:58`, the app is run with `debug=True`, which exposes the Werkzeug interactive debugger and allows execution of arbitrary code. Ranked the top risk across all 22 findings in the [live triage report](https://github.com/pkatha706-dot/DevSecOps-pipeline/issues/3).
 >
 > **Remediation:** set `debug=False`, or drive it from an environment variable that defaults to `False` in any non-local environment.
 
@@ -32,7 +32,7 @@ Demonstrates automated security scanning, AI-assisted triage, and MCP-based secu
 ┌──────────────────────────────────────────────────────────────────────┐
 │                        GitHub Repository                             │
 │                                                                      │
-│   app/app.py  (vulnerable Flask app — intentional findings)          │
+│   app/app.py  (vulnerable Flask app, intentional findings)           │
 │   Dockerfile  (multi-stage, non-root)                                │
 └──────────────────────┬───────────────────────────────────────────────┘
                        │ git push
@@ -88,10 +88,10 @@ Demonstrates automated security scanning, AI-assisted triage, and MCP-based secu
 |---|---|
 | **TruffleHog** | Scans full git history for leaked secrets and credentials |
 | **Bandit** | Static analysis of Python source code for common security issues (CWE mapping) |
-| **Snyk** | Software Composition Analysis — finds CVEs in open-source dependencies |
-| **Checkov** | Infrastructure-as-Code scan — checks Dockerfile and IaC configs against security policies |
+| **Snyk** | Software Composition Analysis: finds CVEs in open-source dependencies |
+| **Checkov** | Infrastructure-as-Code scan: checks Dockerfile and IaC configs against security policies |
 | **Trivy** | Scans the built container image for OS and library CVEs |
-| **OWASP ZAP** | Dynamic Application Security Testing — active baseline scan against the running app |
+| **OWASP ZAP** | Dynamic Application Security Testing: active baseline scan against the running app |
 | **Gemini (Google)** | AI triage agent that prioritizes findings across all scanners and drafts a GitHub Issue |
 | **MCP FastMCP** | Exposes security scanner tools as MCP-protocol endpoints for Claude or other LLM agents |
 | **Syft** | Generates a Software Bill of Materials (SBOM) in SPDX JSON format |

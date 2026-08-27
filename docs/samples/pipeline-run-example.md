@@ -1,8 +1,8 @@
-# Sample Pipeline Run — All 9 Stages Passing
+# Sample Pipeline Run: All 9 Stages Passing
 
 Real run data pulled from GitHub's Actions API for
 [run #20](https://github.com/pkatha706-dot/DevSecOps-pipeline/actions/runs/33116833965)
-(commit [`45eb0ba`](https://github.com/pkatha706-dot/DevSecOps-pipeline/commit/45eb0ba)) —
+(commit [`45eb0ba`](https://github.com/pkatha706-dot/DevSecOps-pipeline/commit/45eb0ba)),
 the run that produced [the sample triage report](triage-report-example.md).
 Total wall-clock time: **5m 08s**, `21:09:50` → `21:14:58` UTC.
 
@@ -19,5 +19,5 @@ Total wall-clock time: **5m 08s**, `21:09:50` → `21:14:58` UTC.
 | 9 | AI Triage | ✅ success | 1m 09s |
 
 Live run (with full logs, including the retry/backoff behavior from
-[INC-10](../incidents.md#inc-10--transient-503s-had-no-retry-path) if it triggers):
+[INC-10](../incidents.md#inc-10-transient-503s-had-no-retry-path) if it triggers):
 https://github.com/pkatha706-dot/DevSecOps-pipeline/actions/runs/33116833965
