@@ -233,9 +233,9 @@ jobs:
           allow_issue_writing: false
           artifact_name: zap-report
 
-      - name: Upload ZAP report
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: zap-report
-          path: report_json.json
+      #- name: Upload ZAP report
+       # uses: actions/upload-artifact@v4
+       # if: always()
+       # with:
+         # name: zap-report
+         # path: report_json.json
