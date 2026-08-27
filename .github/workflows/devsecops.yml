@@ -257,13 +257,12 @@ jobs:
           name: zap-scan-results
           path: zap-report.json
 
-  # Stage 9: AI-assisted vulnerability triage (manual trigger only — avoids
-  # burning Gemini API quota on every push)
+  # Stage 9: AI-assisted vulnerability triage
   ai-triage:
     name: AI Triage
     runs-on: ubuntu-latest
     needs: dast
-    if: always() && github.event_name == 'workflow_dispatch'
+    if: always()
     continue-on-error: true
     permissions:
       issues: write
