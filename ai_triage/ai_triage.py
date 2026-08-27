@@ -2,7 +2,8 @@ import json
 import os
 import sys
 import requests
-import anthropic
+from google import genai
+from google.genai import types
 
 REPORTS_DIR = os.environ.get("REPORTS_DIR", ".")
 GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN", "")
@@ -161,14 +162,14 @@ def main():
 
     prompt = build_triage_prompt(reports)
 
-    client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
-    message = client.messages.create(
-        model="claude-opus-5",
-        max_tokens=2000,
-        messages=[{"role": "user", "content": prompt}],
+    client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
+    response = client.models.generate_content(
+        model="gemini-2.5-flash",
+        contents=prompt,
+        config=types.GenerateContentConfig(max_output_tokens=2000),
     )
 
-    triage_markdown = message.content[0].text
+    triage_markdown = response.text
     create_github_issue(triage_markdown)
 
 

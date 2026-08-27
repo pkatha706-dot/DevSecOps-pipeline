@@ -39,7 +39,7 @@ Demonstrates automated security scanning, AI-assisted triage, and MCP-based secu
 ┌──────────────────────────────────────────────────────────────────────┐
 │              AI Triage Agent (ai_triage/ai_triage.py)                │
 │                                                                      │
-│  load_reports() → build_triage_prompt() → Claude claude-opus-4-8    │
+│  load_reports() → build_triage_prompt() → Gemini 2.5 Flash          │
 │       → prioritized Markdown report → GitHub Issue (label: security) │
 └──────────────────────────────────────────────────────────────────────┘
                        │ parallel / ad-hoc
@@ -70,7 +70,7 @@ Demonstrates automated security scanning, AI-assisted triage, and MCP-based secu
 | **Checkov** | Infrastructure-as-Code scan — checks Dockerfile and IaC configs against security policies |
 | **Trivy** | Scans the built container image for OS and library CVEs |
 | **OWASP ZAP** | Dynamic Application Security Testing — active baseline scan against the running app |
-| **Claude (Anthropic)** | AI triage agent that prioritizes findings across all scanners and drafts a GitHub Issue |
+| **Gemini (Google)** | AI triage agent that prioritizes findings across all scanners and drafts a GitHub Issue |
 | **MCP FastMCP** | Exposes security scanner tools as MCP-protocol endpoints for Claude or other LLM agents |
 | **Syft** | Generates a Software Bill of Materials (SBOM) in SPDX JSON format |
 | **Cosign** | Signs the SBOM blob to establish supply chain provenance |
@@ -82,7 +82,7 @@ Demonstrates automated security scanning, AI-assisted triage, and MCP-based secu
 ### Prerequisites
 
 ```bash
-pip install flask bandit anthropic mcp requests
+pip install flask bandit google-genai mcp requests
 # install snyk CLI, trivy, syft, cosign via their respective install docs
 ```
 
@@ -109,7 +109,7 @@ bandit -r app/ --severity-level medium --format json
 ### Run AI triage (requires reports to exist)
 
 ```bash
-export ANTHROPIC_API_KEY=sk-ant-...
+export GEMINI_API_KEY=AIza...
 export GITHUB_TOKEN=ghp_...
 export GITHUB_REPO=yourname/devsecops-pipeline
 python ai_triage/ai_triage.py
@@ -118,7 +118,7 @@ python ai_triage/ai_triage.py
 ### Start the MCP server
 
 ```bash
-export ANTHROPIC_API_KEY=sk-ant-...
+export GEMINI_API_KEY=AIza...
 python security_tools_mcp/server.py
 ```
 
@@ -141,7 +141,7 @@ bash supply_chain/generate_sbom.sh devsecops-app:latest
 | **Infrastructure Hardening (Level 2)** | Checkov validates Dockerfile against CIS benchmarks |
 | **Container Security (Level 3)** | Trivy scans the built image for critical/high CVEs |
 | **Dynamic Analysis (Level 3)** | OWASP ZAP baseline scan against the live running container |
-| **Vulnerability Management (Level 3)** | AI triage agent cross-correlates all scanner outputs into a prioritized GitHub Issue |
+| **Vulnerability Management (Level 3)** | AI triage agent (Gemini) cross-correlates all scanner outputs into a prioritized GitHub Issue |
 | **Supply Chain Security (Level 4)** | Syft generates SPDX SBOM; Cosign signs for provenance |
 
 ---
@@ -152,5 +152,5 @@ bash supply_chain/generate_sbom.sh devsecops-app:latest
 |---|---|
 | `SNYK_TOKEN` | Authenticate Snyk SCA scans |
 | `GITHUB_TOKEN` | Post triage findings as GitHub Issues (auto-provided by Actions) |
-| `ANTHROPIC_API_KEY` | Claude API access for AI triage and MCP explain tool |
+| `GEMINI_API_KEY` | Gemini API access for AI triage and MCP explain tool |
 | `COSIGN_KEY` | Private key for signing the SBOM |

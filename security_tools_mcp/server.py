@@ -1,7 +1,8 @@
 import json
 import os
 import subprocess
-import anthropic
+from google import genai
+from google.genai import types
 from mcp.server.fastmcp import FastMCP
 
 mcp = FastMCP("security-tools")
@@ -68,8 +69,8 @@ def run_trivy(image_name: str) -> str:
 
 @mcp.tool()
 def explain_vulnerability(vulnerability_id: str, context: str = "") -> str:
-    """Use Claude to explain a vulnerability in plain English for a developer audience."""
-    client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
+    """Use Gemini to explain a vulnerability in plain English for a developer audience."""
+    client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 
     prompt = f"""You are a security engineer explaining vulnerabilities to developers.
 
@@ -84,12 +85,12 @@ Explain this vulnerability in plain English covering:
 
 Keep the explanation under 300 words. Use developer-friendly language, not academic security jargon."""
 
-    message = client.messages.create(
-        model="claude-opus-5",
-        max_tokens=500,
-        messages=[{"role": "user", "content": prompt}],
+    response = client.models.generate_content(
+        model="gemini-2.5-flash",
+        contents=prompt,
+        config=types.GenerateContentConfig(max_output_tokens=500),
     )
-    return message.content[0].text
+    return response.text
 
 
 if __name__ == "__main__":
