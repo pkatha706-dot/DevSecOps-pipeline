@@ -1,6 +1,6 @@
 # Building the DevSecOps Pipeline on GitHub — Step-by-Step Guide
 
-This guide walks through taking the project in this folder — a vulnerable Flask app, an 8-stage GitHub Actions security pipeline, an AI triage agent, and an MCP server — from local files to a working, running pipeline on GitHub. Each step explains not just *what* to do but *why* it matters, so the underlying application security concepts stick.
+This guide walks through taking the project in this folder — a vulnerable Flask app, an 8-stage GitHub Actions security pipeline, and an AI triage agent — from local files to a working, running pipeline on GitHub. Each step explains not just *what* to do but *why* it matters, so the underlying application security concepts stick.
 
 ---
 
@@ -28,7 +28,6 @@ Your repo currently has:
 | `Dockerfile` | Multi-stage build, runs as non-root user |
 | `.github/workflows/devsecops.yml` | The 8-stage pipeline |
 | `ai_triage/ai_triage.py` | Reads scanner JSON reports, calls Claude to prioritize findings, opens a GitHub Issue |
-| `security_tools_mcp/server.py` | Exposes the scanners as MCP tools so an AI coding assistant can call them directly |
 
 Nothing has been pushed to GitHub yet — the repo exists locally with a remote configured (`github.com/pkatha706-dot/DevSecOps-pipeline`) but no commits.
 
@@ -51,7 +50,7 @@ From the project root:
 
 ```bash
 git add .
-git commit -m "Initial DevSecOps pipeline: vulnerable app, 8-stage scan, AI triage, MCP server"
+git commit -m "Initial DevSecOps pipeline: vulnerable app, 8-stage scan, AI triage"
 ```
 
 **Concept to learn:** why the commit matters for Stage 1. TruffleHog (the first pipeline stage) scans the *entire git history*, not just the current file state. If you'd hardcoded a real secret at some point and later deleted it, it would still be recoverable from an earlier commit — this is why secret scanning has to look at history, not just HEAD.
@@ -124,29 +123,6 @@ python ai_triage/ai_triage.py
 
 **Concept to learn:** *vulnerability triage*. In a real environment, four different scanners can flag the same underlying bug in four different ways, with no ranking. A human (or here, an LLM) has to correlate them, decide what's actually exploitable versus noise, and produce one clear action list. This is what separates "the pipeline ran" from "the finding actually got fixed."
 
-### Step 8 — Try the MCP server (optional, but the most distinctive piece)
-
-`security_tools_mcp/server.py` wraps Bandit, Snyk, and Trivy as callable tools using the Model Context Protocol, so an AI coding assistant (Claude Desktop, for example) can run these scanners *during development*, before code is even pushed — not just after, in CI.
-
-```bash
-python security_tools_mcp/server.py
-```
-
-Point Claude Desktop at it via `claude_desktop_config.json`:
-
-```json
-{
-  "mcpServers": {
-    "security-tools": {
-      "command": "python",
-      "args": ["/absolute/path/to/security_tools_mcp/server.py"]
-    }
-  }
-}
-```
-
-**Concept to learn:** MCP (Model Context Protocol) is how AI assistants call external tools in a standardized way — the same pattern this very conversation is built on. Exposing security scanners as MCP tools means an AI assistant can answer "is this code safe?" by actually running Bandit, not by guessing from training data.
-
 ---
 
 ## Part 4: Reading the Results Like a Security Engineer
@@ -173,7 +149,6 @@ This is the mental model the AI triage agent is automating — but understanding
 | IaC scanning | Checkov (Stage 4) |
 | CI/CD pipeline gating | `needs:` dependencies between jobs |
 | Vulnerability triage/prioritization | `ai_triage.py` |
-| MCP (Model Context Protocol) | `security_tools_mcp/server.py` |
 
 ---
 

@@ -1,6 +1,6 @@
 # DevSecOps Pipeline: Portfolio Project
 
-Demonstrates automated security scanning, AI-assisted triage, and MCP-based security tooling for early-career Security Engineer roles.
+Demonstrates automated security scanning and AI-assisted triage for early-career Security Engineer roles.
 
 ---
 
@@ -9,7 +9,6 @@ Demonstrates automated security scanning, AI-assisted triage, and MCP-based secu
 - **A 9-stage CI/CD security pipeline** (GitHub Actions) covering secret scanning, SAST, SCA, IaC scanning, container build, container scanning, DAST, and AI-assisted triage. Six distinct security tools are wired into one pipeline: TruffleHog, Bandit, Snyk, Checkov, Trivy, and OWASP ZAP.
 - **A working AI triage agent**, not a mockup. A live run cross-correlated 22 real findings across 4 scanners into one prioritized, structured GitHub Issue with severity tables, false-positive reasoning, and remediation steps. [See the actual generated report →](https://github.com/pkatha706-dot/DevSecOps-pipeline/issues/3)
 - **Multi-provider LLM integration**: built against Anthropic's API, then migrated to Google's Gemini API mid-project, the kind of vendor swap real production systems require, done without downtime to the rest of the pipeline.
-- **An MCP server** exposing the same scanners as callable tools for an LLM client, independent of the CI pipeline.
 - **12 real, documented debugging incidents**: permission bugs, IaC policy failures, CI token-scope errors, a dead code path, an invalid model ID, a mid-flight upstream merge conflict, a vendor billing wall, a model deprecation, transient API failures, and a silent output-truncation bug caused by an undocumented model feature. Every one was reproduced, root-caused, fixed, and verified, not guessed at. [Full engineering log →](docs/incidents.md)
 
 **Static evidence, no repo access required:** [a sample generated triage report](docs/samples/triage-report-example.md) and [a sample pipeline run with per-stage timing](docs/samples/pipeline-run-example.md).
@@ -63,13 +62,6 @@ Demonstrates automated security scanning, AI-assisted triage, and MCP-based secu
 │  load_reports() → build_triage_prompt() → Gemini 3.6 Flash          │
 │       → prioritized Markdown report → GitHub Issue (label: security) │
 └──────────────────────────────────────────────────────────────────────┘
-                       │ parallel / ad-hoc
-                       ▼
-┌──────────────────────────────────────────────────────────────────────┐
-│          MCP Security Tools Server (security_tools_mcp/server.py)    │
-│                                                                      │
-│  run_bandit()  · run_snyk()  · run_trivy()  · explain_vulnerability()│
-└──────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -85,7 +77,6 @@ Demonstrates automated security scanning, AI-assisted triage, and MCP-based secu
 | **Trivy** | Scans the built container image for OS and library CVEs |
 | **OWASP ZAP** | Dynamic Application Security Testing: active baseline scan against the running app |
 | **Gemini (Google)** | AI triage agent that prioritizes findings across all scanners and drafts a GitHub Issue |
-| **MCP FastMCP** | Exposes security scanner tools as MCP-protocol endpoints for Claude or other LLM agents |
 
 ---
 
@@ -94,7 +85,7 @@ Demonstrates automated security scanning, AI-assisted triage, and MCP-based secu
 ### Prerequisites
 
 ```bash
-pip install flask bandit google-genai mcp requests
+pip install flask bandit google-genai requests
 # install snyk CLI and trivy via their respective install docs
 ```
 
@@ -127,13 +118,6 @@ export GITHUB_REPO=yourname/devsecops-pipeline
 python ai_triage/ai_triage.py
 ```
 
-### Start the MCP server
-
-```bash
-export GEMINI_API_KEY=AIza...
-python security_tools_mcp/server.py
-```
-
 ---
 
 ## OWASP DevSecOps Maturity Model (DSOMM) Mapping
@@ -156,4 +140,4 @@ python security_tools_mcp/server.py
 |---|---|
 | `SNYK_TOKEN` | Authenticate Snyk SCA scans |
 | `GITHUB_TOKEN` | Post triage findings as GitHub Issues (auto-provided by Actions) |
-| `GEMINI_API_KEY` | Gemini API access for AI triage and MCP explain tool |
+| `GEMINI_API_KEY` | Gemini API access for AI triage |
