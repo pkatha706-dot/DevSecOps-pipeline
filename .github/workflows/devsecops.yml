@@ -225,17 +225,20 @@ jobs:
           done
           echo "App failed to start" && exit 1
 
-      - name: Run OWASP ZAP Baseline Scan
-        uses: zaproxy/action-baseline@v0.12.0
-        with:
-          target: http://localhost:5000
-          fail_action: false
-          allow_issue_writing: false
-          artifact_name: zap-report
+      - name: Run ZAP Scan
+        run: |
+          docker run --network host \
+            -v $(pwd):/zap/wrk \
+            ghcr.io/zaproxy/zaproxy:stable \
+            zap-baseline.py \
+            -t http://localhost:5000 \
+            -J zap-report.json \
+            -I
 
-      #- name: Upload ZAP report
-       # uses: actions/upload-artifact@v4
-       # if: always()
-       # with:
-         # name: zap-report
-         # path: report_json.json
+
+      - name: Upload ZAP report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: zap-report
+          path: report_json.json
