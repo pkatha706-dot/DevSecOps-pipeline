@@ -2,6 +2,7 @@ import json
 import os
 import sys
 import time
+from datetime import datetime, timezone
 import requests
 from google import genai
 from google.genai import errors, types
@@ -9,6 +10,7 @@ from google.genai import errors, types
 REPORTS_DIR = os.environ.get("REPORTS_DIR", ".")
 GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN", "")
 GITHUB_REPO = os.environ.get("GITHUB_REPO", "")  # format: owner/repo
+GITHUB_SHA = os.environ.get("GITHUB_SHA", "")
 
 
 def load_reports() -> dict:
@@ -32,13 +34,47 @@ def load_reports() -> dict:
     return reports
 
 
+def _count_findings(reports: dict) -> dict:
+    counts = {}
+
+    bandit = reports.get("bandit", {})
+    counts["bandit"] = 0 if "error" in bandit else len(bandit.get("results", []))
+
+    snyk = reports.get("snyk", {})
+    counts["snyk"] = 0 if "error" in snyk else len(snyk.get("vulnerabilities", []))
+
+    trivy = reports.get("trivy", {})
+    if "error" in trivy:
+        counts["trivy"] = 0
+    else:
+        counts["trivy"] = sum(
+            len(r.get("Vulnerabilities", [])) for r in trivy.get("Results", [])
+        )
+
+    zap = reports.get("zap", {})
+    if "error" in zap:
+        counts["zap"] = 0
+    else:
+        alerts = zap.get("site", [{}])[0].get("alerts", []) if zap.get("site") else []
+        if not alerts:
+            alerts = zap.get("alerts", [])
+        counts["zap"] = len(alerts)
+
+    return counts
+
+
 def build_triage_prompt(reports: dict) -> str:
     bandit_summary = _summarize_bandit(reports.get("bandit", {}))
     snyk_summary = _summarize_snyk(reports.get("snyk", {}))
     trivy_summary = _summarize_trivy(reports.get("trivy", {}))
     zap_summary = _summarize_zap(reports.get("zap", {}))
 
-    return f"""You are a senior application security engineer performing vulnerability triage for a DevSecOps pipeline.
+    counts = _count_findings(reports)
+    total = sum(counts.values())
+
+    return f"""You are a senior application security engineer delivering a vulnerability triage report to engineering leadership. Write with the precision and restraint of a professional security assessment: no hedging, no filler, no meta-commentary about the task itself, no conversational openers or closers.
+
+Ground truth finding counts (computed directly from the tool output — use these exact numbers, do not recount): Bandit {counts['bandit']}, Snyk {counts['snyk']}, Trivy {counts['trivy']}, ZAP {counts['zap']} — {total} total.
 
 Below are findings from four security scanning tools. Your task is to:
 1. Prioritize findings by combined severity and exploitability (Critical > High > Medium > Low)
@@ -59,12 +95,17 @@ Below are findings from four security scanning tools. Your task is to:
 ## OWASP ZAP DAST Findings
 {zap_summary}
 
-Produce the triage report now. Use this structure:
-- ## Executive Summary (2-3 sentences)
-- ## Critical & High Findings (table with columns: ID | Tool | Severity | Component | Remediation)
-- ## Medium Findings (table)
-- ## Likely False Positives (list with reasoning)
-- ## Recommended Immediate Actions (numbered list)
+Produce the triage report now. Requirements:
+- Every confirmed finding from the sections above must appear in exactly one table row — do not omit or summarize any away.
+- Use standard GitHub-Flavored Markdown tables (no bullet lists standing in for tables).
+- Do not add sections beyond the structure below, and do not stop early.
+
+Structure, in this exact order:
+- ## Executive Summary (2-3 sentences: total findings, single most severe risk, overall posture)
+- ## Critical & High Findings (table: ID | Tool | Severity | Component | Remediation)
+- ## Medium Findings (table: ID | Tool | Severity | Component | Remediation)
+- ## Likely False Positives (list with one-sentence reasoning each, or "None identified.")
+- ## Recommended Immediate Actions (numbered list, ordered by priority)
 """
 
 
@@ -144,6 +185,20 @@ def generate_with_retry(client: genai.Client, max_attempts: int = 3, delay: int 
             delay *= 2
 
 
+def build_report_header(reports: dict) -> str:
+    counts = _count_findings(reports)
+    total = sum(counts.values())
+    generated_at = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    repo_line = GITHUB_REPO or "local run"
+    commit_line = GITHUB_SHA[:7] if GITHUB_SHA else "n/a"
+
+    return f"""**Repository:** {repo_line}  \n**Commit:** `{commit_line}`  \n**Generated:** {generated_at}  \n**Scanners:** Bandit ({counts['bandit']}) · Snyk ({counts['snyk']}) · Trivy ({counts['trivy']}) · OWASP ZAP ({counts['zap']}) — **{total} total findings**
+
+---
+
+"""
+
+
 def create_github_issue(markdown: str) -> dict:
     if not GITHUB_TOKEN or not GITHUB_REPO:
         print("GITHUB_TOKEN or GITHUB_REPO not set — skipping issue creation")
@@ -180,13 +235,10 @@ def main():
         client,
         model="gemini-3.6-flash",
         contents=prompt,
-        config=types.GenerateContentConfig(
-            max_output_tokens=4096,
-            thinking_config=types.ThinkingConfig(thinking_budget=0),
-        ),
+        config=types.GenerateContentConfig(max_output_tokens=8192),
     )
 
-    triage_markdown = response.text
+    triage_markdown = build_report_header(reports) + response.text
     create_github_issue(triage_markdown)
 
 
